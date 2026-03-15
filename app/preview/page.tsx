@@ -27,37 +27,31 @@ function PreviewContent() {
   const [formData, setFormData] = useState<PreviewData>(defaultData);
   const [mounted, setMounted] = useState(false);
 
-  const normalizeToPreview = (value: unknown): Partial<PreviewData> => {
-    if (!value || typeof value !== "object") {
-      return {};
-    }
-
-    const source = value as Record<string, unknown>;
-
-    return {
-      fullName: typeof source.fullName === "string" ? source.fullName : typeof source.name === "string" ? source.name : "",
-      designation: typeof source.designation === "string" ? source.designation : "",
-      company: typeof source.company === "string" ? source.company : "",
-      email: typeof source.email === "string" ? source.email : "",
-      phone: typeof source.phone === "string" ? source.phone : "",
-    };
-  };
-
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 0);
     let merged: PreviewData = { ...defaultData };
 
     try {
       const raw = window.localStorage.getItem("tlc-preview");
       if (raw) {
-        const parsed = normalizeToPreview(JSON.parse(raw));
-        merged = { ...merged, ...parsed };
+        const p = JSON.parse(raw) as Record<string, unknown>;
+        if (p.fullName && typeof p.fullName === "string") merged.fullName = p.fullName;
+        else if (p.name && typeof p.name === "string") merged.fullName = p.name;
+        if (p.designation && typeof p.designation === "string") merged.designation = p.designation;
+        if (p.company && typeof p.company === "string") merged.company = p.company;
+        if (p.email && typeof p.email === "string") merged.email = p.email;
+        if (p.phone && typeof p.phone === "string") merged.phone = p.phone;
       }
 
-      const rawDraft = window.localStorage.getItem("tlc-home-preview-draft");
-      if (rawDraft) {
-        const parsedDraft = normalizeToPreview(JSON.parse(rawDraft));
-        merged = { ...merged, ...parsedDraft };
+      // Fallback: home-page draft (name / email / phone / company keys)
+      if (!merged.fullName) {
+        const rawDraft = window.localStorage.getItem("tlc-home-preview-draft");
+        if (rawDraft) {
+          const d = JSON.parse(rawDraft) as Record<string, unknown>;
+          if (d.name && typeof d.name === "string") merged.fullName = d.name;
+          if (d.email && typeof d.email === "string") merged.email = d.email;
+          if (d.phone && typeof d.phone === "string") merged.phone = d.phone;
+          if (d.company && typeof d.company === "string") merged.company = d.company;
+        }
       }
     } catch {
       // Ignore malformed local data.
@@ -77,7 +71,7 @@ function PreviewContent() {
     };
 
     setFormData(merged);
-    return () => clearTimeout(t);
+    setMounted(true);
   }, [searchParams]);
 
   useEffect(() => {
@@ -143,14 +137,6 @@ function PreviewContent() {
     router.push("/order");
   };
 
-  if (!mounted) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center text-[#C79356]">
-        Loading preview...
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="mb-8 flex items-center justify-between">
@@ -168,28 +154,28 @@ function PreviewContent() {
             <form className="mt-8 space-y-4" onSubmit={onContinue}>
               <div>
                 <label className="label">Full Name</label>
-                <input className="input" placeholder="James Sterling" value={formData.fullName} onChange={(e) => onChange("fullName", e.target.value)} />
+                <input className="input" placeholder="James Sterling" value={mounted ? formData.fullName : ""} onChange={(e) => onChange("fullName", e.target.value)} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label">Designation</label>
-                  <input className="input" placeholder="Founder" value={formData.designation} onChange={(e) => onChange("designation", e.target.value)} />
+                  <input className="input" placeholder="Founder" value={mounted ? formData.designation : ""} onChange={(e) => onChange("designation", e.target.value)} />
                 </div>
                 <div>
                   <label className="label">Company</label>
-                  <input className="input" placeholder="The Last Card" value={formData.company} onChange={(e) => onChange("company", e.target.value)} />
+                  <input className="input" placeholder="The Last Card" value={mounted ? formData.company : ""} onChange={(e) => onChange("company", e.target.value)} />
                 </div>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="label">Email</label>
-                  <input type="email" className="input" placeholder="you@example.com" value={formData.email} onChange={(e) => onChange("email", e.target.value)} />
+                  <input type="email" className="input" placeholder="you@example.com" value={mounted ? formData.email : ""} onChange={(e) => onChange("email", e.target.value)} />
                 </div>
                 <div>
                   <label className="label">Phone</label>
-                  <input className="input" placeholder="+91 90000 00000" value={formData.phone} onChange={(e) => onChange("phone", e.target.value)} />
+                  <input className="input" placeholder="+91 90000 00000" value={mounted ? formData.phone : ""} onChange={(e) => onChange("phone", e.target.value)} />
                 </div>
               </div>
 

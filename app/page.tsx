@@ -2,27 +2,26 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { DotLottie } from '@lottiefiles/dotlottie-web';
+
+// Loaded client-side only — avoids SSR + web-worker base-URL issues that
+// break @lottiefiles/dotlottie-web's WASM renderer on Vercel.
+const DotLottieReact = dynamic(
+  () => import("@lottiefiles/dotlottie-react").then((m) => ({ default: m.DotLottieReact })),
+  { ssr: false, loading: () => <div className="h-full w-full animate-pulse rounded-xl bg-zinc-700/40" /> },
+);
 
 function LottiePlayer({ src }: { src: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const dotLottie = new DotLottie({
-      autoplay: true,
-      loop: true,
-      canvas: canvasRef.current,
-      src: src,
-    });
-    return () => {
-      dotLottie.destroy();
-    };
-  }, [src]);
-
-  return <canvas ref={canvasRef} className="h-full w-full object-contain" />;
+  return (
+    <DotLottieReact
+      src={src}
+      autoplay
+      loop
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
 }
 
 const featureData = {
@@ -123,16 +122,6 @@ export default function Home() {
         const parsed = JSON.parse(raw) as Partial<typeof previewDraft>;
         setPreviewDraft((prev) => ({ ...prev, ...parsed }));
       }
-
-      const hiddenFloating = window.localStorage.getItem("tlc-home-floating-video-hidden");
-      if (hiddenFloating === "1") {
-        setShowFloatingVideo(false);
-      }
-
-      const savedMute = window.localStorage.getItem("tlc-home-video-muted");
-      if (savedMute === "0") {
-        setVideoMuted(false);
-      }
     } catch {
       // Ignore malformed drafts.
     }
@@ -158,18 +147,6 @@ export default function Home() {
   }, [previewDraft, mounted]);
 
   useEffect(() => {
-    if (!mounted) {
-      return;
-    }
-
-    window.localStorage.setItem("tlc-home-video-muted", videoMuted ? "1" : "0");
-    const videos = [heroVideoRef.current, floatingVideoRef.current].filter(Boolean) as HTMLVideoElement[];
-    videos.forEach((video) => {
-      video.muted = videoMuted;
-    });
-  }, [mounted, videoMuted]);
-
-  useEffect(() => {
     const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
 
     const updateHoverMode = () => {
@@ -181,6 +158,25 @@ export default function Home() {
     mediaQuery.addEventListener("change", updateHoverMode);
     return () => mediaQuery.removeEventListener("change", updateHoverMode);
   }, []);
+
+  // Imperatively toggles mute/unmute and resumes playback in the same user-
+  // gesture tick, bypassing the React muted-prop DOM-sync bug (#6544) and
+  // browser autoplay restrictions.
+  const toggleVideoAudio = () => {
+    const newMuted = !videoMuted;
+    setVideoMuted(newMuted);
+    [heroVideoRef, floatingVideoRef].forEach((ref) => {
+      if (!ref.current) return;
+      ref.current.muted = newMuted;
+      if (!newMuted) {
+        ref.current.play().catch(() => {
+          // Autoplay still blocked — stays muted silently.
+          ref.current!.muted = true;
+          setVideoMuted(true);
+        });
+      }
+    });
+  };
 
   const onFreePreviewSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -269,14 +265,12 @@ export default function Home() {
             <div className="w-full lg:w-1/2">
               <div className="rounded-2xl border border-[#ffcc00]/20 bg-zinc-900/75 p-4 shadow-[0_14px_50px_rgba(0,0,0,0.55)]">
                 <div className="overflow-hidden rounded-xl border border-zinc-700">
-                  <video ref={heroVideoRef} src="/assets/video/home2.mp4" autoPlay muted={videoMuted} loop playsInline controls className="h-full w-full object-cover" />
+                  <video ref={heroVideoRef} src="/assets/video/home2.mp4" autoPlay muted loop playsInline controls className="h-full w-full object-cover" />
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    setVideoMuted((prev) => !prev);
-                    void heroVideoRef.current?.play();
-                    void floatingVideoRef.current?.play();
+                    toggleVideoAudio();
                   }}
                   className="mt-3 rounded-lg border border-[#ffcc00]/35 bg-zinc-950/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#ffcc00] transition hover:bg-[#ffcc00]/10"
                 >
@@ -626,16 +620,13 @@ export default function Home() {
         <div className="fixed bottom-3 left-3 z-[100] w-[130px] overflow-hidden rounded-xl bg-black shadow-[0_12px_36px_rgba(0,0,0,0.55)] sm:bottom-4 sm:left-4 sm:w-[160px]">
           <button
             type="button"
-            onClick={() => {
-              setShowFloatingVideo(false);
-              window.localStorage.setItem("tlc-home-floating-video-hidden", "1");
-            }}
+            onClick={() => setShowFloatingVideo(false)}
             className="absolute right-2 top-2 z-[60] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-white/50 bg-black/70 text-sm font-bold text-white transition hover:bg-black"
             aria-label="Close video"
           >
             ✕
           </button>
-          <video ref={floatingVideoRef} src="/assets/video/home1.mp4" autoPlay muted={videoMuted} loop playsInline controls className="block w-full object-cover" style={{ aspectRatio: "9 / 16" }} />
+          <video ref={floatingVideoRef} src="/assets/video/home1.mp4" autoPlay muted loop playsInline className="pointer-events-none block w-full object-cover" style={{ aspectRatio: "9 / 16" }} />
         </div>
       )}
     </div>
