@@ -34,7 +34,7 @@ export function proxy(request: NextRequest) {
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://res.cloudinary.com",
     "media-src 'self' https://res.cloudinary.com",
-    "connect-src 'self' 'unsafe-inline' https://api.razorpay.com https://*.supabase.co blob: data: https://lottiefiles.com https://unpkg.com",
+    "connect-src 'self' 'unsafe-inline' https://api.razorpay.com https://*.supabase.co blob: data: https://lottiefiles.com https://cdn.lottiefiles.com https://*.lottiefiles.com https://unpkg.com",
     "worker-src 'self' blob: data:",
     "child-src 'self' blob: data:",
     "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",

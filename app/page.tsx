@@ -96,12 +96,15 @@ const faqs = [
 
 export default function Home() {
   const router = useRouter();
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const floatingVideoRef = useRef<HTMLVideoElement>(null);
   const [activeFeature, setActiveFeature] = useState<FeatureKey | null>(null);
   const [isHoverDevice, setIsHoverDevice] = useState(false);
   const [finish, setFinish] = useState<FinishKey>("matte");
   const [design, setDesign] = useState<number>(4);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [showFloatingVideo, setShowFloatingVideo] = useState(true);
+  const [videoMuted, setVideoMuted] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [previewDraft, setPreviewDraft] = useState({
     name: "",
@@ -120,6 +123,16 @@ export default function Home() {
         const parsed = JSON.parse(raw) as Partial<typeof previewDraft>;
         setPreviewDraft((prev) => ({ ...prev, ...parsed }));
       }
+
+      const hiddenFloating = window.localStorage.getItem("tlc-home-floating-video-hidden");
+      if (hiddenFloating === "1") {
+        setShowFloatingVideo(false);
+      }
+
+      const savedMute = window.localStorage.getItem("tlc-home-video-muted");
+      if (savedMute === "0") {
+        setVideoMuted(false);
+      }
     } catch {
       // Ignore malformed drafts.
     }
@@ -127,8 +140,34 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
     window.localStorage.setItem("tlc-home-preview-draft", JSON.stringify(previewDraft));
-  }, [previewDraft]);
+    window.localStorage.setItem(
+      "tlc-preview",
+      JSON.stringify({
+        fullName: previewDraft.name,
+        designation: "",
+        company: previewDraft.company,
+        email: previewDraft.email,
+        phone: previewDraft.phone,
+      }),
+    );
+  }, [previewDraft, mounted]);
+
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    window.localStorage.setItem("tlc-home-video-muted", videoMuted ? "1" : "0");
+    const videos = [heroVideoRef.current, floatingVideoRef.current].filter(Boolean) as HTMLVideoElement[];
+    videos.forEach((video) => {
+      video.muted = videoMuted;
+    });
+  }, [mounted, videoMuted]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -145,6 +184,17 @@ export default function Home() {
 
   const onFreePreviewSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const payload = {
+      fullName: previewDraft.name.trim(),
+      designation: "",
+      company: previewDraft.company.trim(),
+      email: previewDraft.email.trim(),
+      phone: previewDraft.phone.trim(),
+    };
+
+    window.localStorage.setItem("tlc-preview", JSON.stringify(payload));
+
     const params = new URLSearchParams();
     if (previewDraft.name.trim()) params.set("name", previewDraft.name.trim());
     if (previewDraft.email.trim()) params.set("email", previewDraft.email.trim());
@@ -219,8 +269,19 @@ export default function Home() {
             <div className="w-full lg:w-1/2">
               <div className="rounded-2xl border border-[#ffcc00]/20 bg-zinc-900/75 p-4 shadow-[0_14px_50px_rgba(0,0,0,0.55)]">
                 <div className="overflow-hidden rounded-xl border border-zinc-700">
-                  <video src="/assets/video/home2.mp4" autoPlay muted loop playsInline className="h-full w-full object-cover" />
+                  <video ref={heroVideoRef} src="/assets/video/home2.mp4" autoPlay muted={videoMuted} loop playsInline controls className="h-full w-full object-cover" />
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoMuted((prev) => !prev);
+                    void heroVideoRef.current?.play();
+                    void floatingVideoRef.current?.play();
+                  }}
+                  className="mt-3 rounded-lg border border-[#ffcc00]/35 bg-zinc-950/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#ffcc00] transition hover:bg-[#ffcc00]/10"
+                >
+                  {videoMuted ? "Enable Video Audio" : "Mute Video Audio"}
+                </button>
                 <div
                   className="mt-4 grid grid-cols-2 gap-2 sm:gap-3"
                   onMouseLeave={() => {
@@ -287,7 +348,7 @@ export default function Home() {
                   name="name"
                   placeholder="Full Name"
                   className="input"
-                  value={mounted ? previewDraft.name : ""}
+                  value={previewDraft.name}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, name: e.target.value }))}
                 />
                 <input
@@ -295,21 +356,21 @@ export default function Home() {
                   type="email"
                   placeholder="Email Address"
                   className="input"
-                  value={mounted ? previewDraft.email : ""}
+                  value={previewDraft.email}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, email: e.target.value }))}
                 />
                 <input
                   name="phone"
                   placeholder="Phone Number"
                   className="input"
-                  value={mounted ? previewDraft.phone : ""}
+                  value={previewDraft.phone}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, phone: e.target.value }))}
                 />
                 <input
                   name="company"
                   placeholder="Company / Title"
                   className="input"
-                  value={mounted ? previewDraft.company : ""}
+                  value={previewDraft.company}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, company: e.target.value }))}
                 />
               </div>
@@ -565,13 +626,16 @@ export default function Home() {
         <div className="fixed bottom-3 left-3 z-[100] w-[130px] overflow-hidden rounded-xl bg-black shadow-[0_12px_36px_rgba(0,0,0,0.55)] sm:bottom-4 sm:left-4 sm:w-[160px]">
           <button
             type="button"
-            onClick={() => setShowFloatingVideo(false)}
+            onClick={() => {
+              setShowFloatingVideo(false);
+              window.localStorage.setItem("tlc-home-floating-video-hidden", "1");
+            }}
             className="absolute right-2 top-2 z-[60] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-white/50 bg-black/70 text-sm font-bold text-white transition hover:bg-black"
             aria-label="Close video"
           >
             ✕
           </button>
-          <video src="/assets/video/home1.mp4" autoPlay muted loop playsInline className="pointer-events-none block w-full object-cover" style={{ aspectRatio: "9 / 16" }} />
+          <video ref={floatingVideoRef} src="/assets/video/home1.mp4" autoPlay muted={videoMuted} loop playsInline controls className="block w-full object-cover" style={{ aspectRatio: "9 / 16" }} />
         </div>
       )}
     </div>

@@ -27,6 +27,22 @@ function PreviewContent() {
   const [formData, setFormData] = useState<PreviewData>(defaultData);
   const [mounted, setMounted] = useState(false);
 
+  const normalizeToPreview = (value: unknown): Partial<PreviewData> => {
+    if (!value || typeof value !== "object") {
+      return {};
+    }
+
+    const source = value as Record<string, unknown>;
+
+    return {
+      fullName: typeof source.fullName === "string" ? source.fullName : typeof source.name === "string" ? source.name : "",
+      designation: typeof source.designation === "string" ? source.designation : "",
+      company: typeof source.company === "string" ? source.company : "",
+      email: typeof source.email === "string" ? source.email : "",
+      phone: typeof source.phone === "string" ? source.phone : "",
+    };
+  };
+
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 0);
     let merged: PreviewData = { ...defaultData };
@@ -34,8 +50,14 @@ function PreviewContent() {
     try {
       const raw = window.localStorage.getItem("tlc-preview");
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<PreviewData>;
+        const parsed = normalizeToPreview(JSON.parse(raw));
         merged = { ...merged, ...parsed };
+      }
+
+      const rawDraft = window.localStorage.getItem("tlc-home-preview-draft");
+      if (rawDraft) {
+        const parsedDraft = normalizeToPreview(JSON.parse(rawDraft));
+        merged = { ...merged, ...parsedDraft };
       }
     } catch {
       // Ignore malformed local data.
@@ -61,6 +83,15 @@ function PreviewContent() {
   useEffect(() => {
     if (mounted) {
       window.localStorage.setItem("tlc-preview", JSON.stringify(formData));
+      window.localStorage.setItem(
+        "tlc-home-preview-draft",
+        JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+        }),
+      );
     }
   }, [formData, mounted]);
 
@@ -100,6 +131,15 @@ function PreviewContent() {
     }
 
     localStorage.setItem("tlc-preview", JSON.stringify(formData));
+    localStorage.setItem(
+      "tlc-home-preview-draft",
+      JSON.stringify({
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        company: formData.company,
+      }),
+    );
     router.push("/order");
   };
 
