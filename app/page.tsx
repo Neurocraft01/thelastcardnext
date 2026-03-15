@@ -113,15 +113,17 @@ export default function Home() {
   const price = useMemo(() => finishPricing[finish], [finish]);
 
   useEffect(() => {
-    setMounted(true);
+    const t = setTimeout(() => setMounted(true), 0);
     try {
       const raw = window.localStorage.getItem("tlc-home-preview-draft");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<typeof previewDraft>;
-      setPreviewDraft((prev) => ({ ...prev, ...parsed }));
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<typeof previewDraft>;
+        setPreviewDraft((prev) => ({ ...prev, ...parsed }));
+      }
     } catch {
       // Ignore malformed drafts.
     }
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {

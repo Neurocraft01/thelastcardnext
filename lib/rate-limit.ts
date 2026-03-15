@@ -12,7 +12,7 @@ type RateLimitConfig = {
 
 const localStore = new Map<string, { count: number; resetAt: number }>();
 
-function useUpstash() {
+function isUpstashConfigured() {
   return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 }
 
@@ -84,7 +84,7 @@ function localRateLimit(config: RateLimitConfig): RateLimitResult {
 }
 
 export async function runRateLimit(config: RateLimitConfig): Promise<RateLimitResult> {
-  if (useUpstash()) {
+  if (isUpstashConfigured()) {
     return distributedRateLimit(config);
   }
 

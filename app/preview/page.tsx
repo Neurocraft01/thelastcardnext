@@ -21,14 +21,6 @@ const defaultData: PreviewData = {
   phone: "",
 };
 
-const PALETTE = {
-  camel: "#C79356",
-  taupe: "#3C3329",
-  carbonBlack: "#1A1A1A",
-  onyx: "#0E0E0E",
-  silver: "#C3BFB1",
-} as const;
-
 function PreviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,7 +28,7 @@ function PreviewContent() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    const t = setTimeout(() => setMounted(true), 0);
     let merged: PreviewData = { ...defaultData };
 
     try {
@@ -63,6 +55,7 @@ function PreviewContent() {
     };
 
     setFormData(merged);
+    return () => clearTimeout(t);
   }, [searchParams]);
 
   useEffect(() => {
