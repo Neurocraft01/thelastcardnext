@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type PreviewData = {
   fullName: string;
@@ -29,11 +29,14 @@ const PALETTE = {
   silver: "#C3BFB1",
 } as const;
 
-export default function PreviewPage() {
+function PreviewContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState<PreviewData>(defaultData);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     let merged: PreviewData = { ...defaultData };
 
     try {
@@ -46,14 +49,12 @@ export default function PreviewPage() {
       // Ignore malformed local data.
     }
 
-    const params = new URLSearchParams(window.location.search);
-
     const fromQuery: Partial<PreviewData> = {
-      fullName: params.get("name") ?? params.get("fullName") ?? "",
-      designation: params.get("designation") ?? "",
-      company: params.get("company") ?? "",
-      email: params.get("email") ?? "",
-      phone: params.get("phone") ?? "",
+      fullName: searchParams.get("name") ?? searchParams.get("fullName") ?? "",
+      designation: searchParams.get("designation") ?? "",
+      company: searchParams.get("company") ?? "",
+      email: searchParams.get("email") ?? "",
+      phone: searchParams.get("phone") ?? "",
     };
 
     merged = {
@@ -62,11 +63,13 @@ export default function PreviewPage() {
     };
 
     setFormData(merged);
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
-    window.localStorage.setItem("tlc-preview", JSON.stringify(formData));
-  }, [formData]);
+    if (mounted) {
+      window.localStorage.setItem("tlc-preview", JSON.stringify(formData));
+    }
+  }, [formData, mounted]);
 
   const previewCardTitle = useMemo(() => {
     if (!formData.fullName.trim()) {
@@ -107,10 +110,17 @@ export default function PreviewPage() {
     router.push("/order");
   };
 
+  if (!mounted) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center text-[#C79356]">
+        Loading preview...
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0E0E0E] text-white px-6 py-10">
-      <div className="mx-auto w-full max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+    <>
+      <div className="mb-8 flex items-center justify-between">
           <Link href="/" className="text-xs uppercase tracking-[0.18em] text-zinc-300 hover:text-[#C79356]">
             Back to Home
           </Link>
@@ -232,6 +242,17 @@ export default function PreviewPage() {
             </ul>
           </section>
         </div>
+      </>
+  );
+}
+
+export default function PreviewPage() {
+  return (
+    <div className="min-h-screen bg-[#0E0E0E] text-white px-6 py-10">
+      <div className="mx-auto w-full max-w-7xl">
+        <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center text-[#C79356]">Loading preview...</div>}>
+          <PreviewContent />
+        </Suspense>
       </div>
     </div>
   );

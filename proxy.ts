@@ -29,12 +29,14 @@ export function proxy(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://checkout.razorpay.com`,
-    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://checkout.razorpay.com`,
+    `style-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`,
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://res.cloudinary.com",
     "media-src 'self' https://res.cloudinary.com",
-    "connect-src 'self' https://api.razorpay.com https://*.supabase.co",
+    "connect-src 'self' 'unsafe-inline' https://api.razorpay.com https://*.supabase.co blob: data: https://lottiefiles.com https://unpkg.com",
+    "worker-src 'self' blob: data:",
+    "child-src 'self' blob: data:",
     "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
     "object-src 'none'",
     "base-uri 'self'",

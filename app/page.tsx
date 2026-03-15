@@ -2,8 +2,28 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { DotLottie } from '@lottiefiles/dotlottie-web';
+
+function LottiePlayer({ src }: { src: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const dotLottie = new DotLottie({
+      autoplay: true,
+      loop: true,
+      canvas: canvasRef.current,
+      src: src,
+    });
+    return () => {
+      dotLottie.destroy();
+    };
+  }, [src]);
+
+  return <canvas ref={canvasRef} className="h-full w-full object-contain" />;
+}
 
 const featureData = {
   contact: {
@@ -82,6 +102,7 @@ export default function Home() {
   const [design, setDesign] = useState<number>(4);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const [showFloatingVideo, setShowFloatingVideo] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [previewDraft, setPreviewDraft] = useState({
     name: "",
     email: "",
@@ -92,6 +113,7 @@ export default function Home() {
   const price = useMemo(() => finishPricing[finish], [finish]);
 
   useEffect(() => {
+    setMounted(true);
     try {
       const raw = window.localStorage.getItem("tlc-home-preview-draft");
       if (!raw) return;
@@ -140,6 +162,9 @@ export default function Home() {
           <div className="hidden items-center gap-7 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-300 md:flex">
             <a href="#free-preview" className="transition hover:text-[#ffcc00]">
               Free Preview
+            </a>
+             <a href="/about" className="transition hover:text-[#ffcc00]">
+              About
             </a>
             <a href="#how-it-works" className="transition hover:text-[#ffcc00]">
               Process
@@ -260,7 +285,7 @@ export default function Home() {
                   name="name"
                   placeholder="Full Name"
                   className="input"
-                  value={previewDraft.name}
+                  value={mounted ? previewDraft.name : ""}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, name: e.target.value }))}
                 />
                 <input
@@ -268,21 +293,21 @@ export default function Home() {
                   type="email"
                   placeholder="Email Address"
                   className="input"
-                  value={previewDraft.email}
+                  value={mounted ? previewDraft.email : ""}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, email: e.target.value }))}
                 />
                 <input
                   name="phone"
                   placeholder="Phone Number"
                   className="input"
-                  value={previewDraft.phone}
+                  value={mounted ? previewDraft.phone : ""}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, phone: e.target.value }))}
                 />
                 <input
                   name="company"
                   placeholder="Company / Title"
                   className="input"
-                  value={previewDraft.company}
+                  value={mounted ? previewDraft.company : ""}
                   onChange={(e) => setPreviewDraft((prev) => ({ ...prev, company: e.target.value }))}
                 />
               </div>
@@ -303,12 +328,15 @@ export default function Home() {
             </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {[
-                { step: "1", title: "Tap", desc: "Tap your card on any modern smartphone. No app needed for your client." },
-                { step: "2", title: "Share", desc: "Instantly share your profile with contacts, socials, and media." },
-                { step: "3", title: "Save", desc: "Recipient saves your details directly and reaches you anytime." },
+                { step: "1", title: "Tap", desc: "Tap your card on any modern smartphone. No app needed for your client.", lottie: "/assets/animation/Link_Tap.lottie" },
+                { step: "2", title: "Share", desc: "Instantly share your profile with contacts, socials, and media.", lottie: "/assets/animation/Card_Sharing.lottie" },
+                { step: "3", title: "Save", desc: "Recipient saves your details directly and reaches you anytime.", lottie: "/assets/animation/Link_Connect.lottie" },
               ].map((item) => (
-                <article key={item.step} className="rounded-3xl border border-zinc-700 bg-zinc-800/60 p-7 text-center transition hover:-translate-y-1 hover:border-[#ffcc00]/40">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#ffcc00]/10 font-extrabold text-[#ffcc00]">{item.step}</div>
+                <article key={item.step} className="relative rounded-3xl border border-zinc-700 bg-zinc-800/60 p-7 text-center transition hover:-translate-y-1 hover:border-[#ffcc00]/40">
+                  <div className="absolute left-6 top-6 flex h-8 w-8 items-center justify-center rounded-full bg-[#ffcc00]/10 text-xs font-extrabold text-[#ffcc00]">{item.step}</div>
+                  <div className="mx-auto mt-2 mb-6 flex h-32 w-32 items-center justify-center sm:h-40 sm:w-40 bg-white rounded-xl overflow-hidden">
+                    <LottiePlayer src={item.lottie} />
+                  </div>
                   <h3 className="text-xl font-bold uppercase tracking-[0.08em] text-white">{item.title}</h3>
                   <p className="mt-3 text-sm text-zinc-400">{item.desc}</p>
                 </article>
@@ -405,6 +433,88 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="py-16 sm:py-24 bg-zinc-900" id="for-everyone">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-12 text-center sm:mb-16">
+              <span
+                className="mb-4 inline-flex items-center rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.2em] sm:mb-6 sm:px-4 sm:text-[11px]"
+                style={{ background: "rgba(255,195,50,.08)", color: "#FFC332", border: "1px solid rgba(255,195,50,.15)" }}
+              >
+                For Everyone
+              </span>
+              <h2 className="font-display mb-3 px-4 text-2xl uppercase sm:mb-4 sm:text-3xl md:text-4xl lg:text-5xl" style={{ color: "#fbad05" }}>
+                Cards for Everyone
+              </h2>
+              <div className="mx-auto mb-4 h-1 w-16 bg-[#ffcc00] sm:mb-6 sm:w-24"></div>
+              <p className="mx-auto max-w-2xl px-4 text-sm text-zinc-400 sm:text-base md:text-lg">
+                Your premium visiting card, no matter who you are. Built for professionals, loved by everyone.
+              </p>
+            </div>
+
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 sm:gap-8">
+              {/* Creators */}
+              <div className="group rounded-2xl border border-zinc-700 bg-zinc-800/60 p-6 text-center transition-all hover:-translate-y-3 hover:border-[#ffcc00]/40 hover:shadow-2xl sm:rounded-3xl sm:p-8">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#FFC332,#e6a800)] shadow-lg transition-transform group-hover:scale-110 sm:mb-6 sm:h-20 sm:w-20 sm:rounded-2xl">
+                  {/* Heroicons equivalent for 'brush' */}
+                  <svg className="h-8 w-8 text-black sm:h-10 sm:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </div>
+                <h3 className="mb-2 text-lg font-bold uppercase tracking-wide text-white sm:mb-3 sm:text-xl">Creators</h3>
+                <p className="mb-3 text-xs leading-relaxed text-zinc-400 sm:mb-4 sm:text-sm">
+                  Artists, designers, photographers, influencers. Share your portfolio, social links, and creative identity with a single tap.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.1)", color: "#FFC332", border: "1px solid rgba(255,195,50,.2)" }}>Artists</span>
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.1)", color: "#FFC332", border: "1px solid rgba(255,195,50,.2)" }}>Designers</span>
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.1)", color: "#FFC332", border: "1px solid rgba(255,195,50,.2)" }}>Influencers</span>
+                </div>
+              </div>
+
+              {/* Business Professionals */}
+              <div className="relative group rounded-2xl border-2 border-[#ffcc00]/40 p-6 text-center shadow-2xl transition-all hover:-translate-y-3 hover:shadow-[#ffcc00]/20 sm:rounded-3xl sm:p-8 md:scale-105" style={{ background: "linear-gradient(135deg,rgba(255,195,50,.08),rgba(255,195,50,.02))" }}>
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest sm:-top-3 sm:px-4 sm:text-[10px]" style={{ background: "linear-gradient(135deg,#FFC332,#e6a800)", color: "#000" }}>
+                  Most Popular
+                </div>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#FFC332,#e6a800)] shadow-lg transition-transform group-hover:scale-110 sm:mb-6 sm:h-20 sm:w-20 sm:rounded-2xl">
+                  {/* Heroicons equivalent for 'business_center' */}
+                  <svg className="h-8 w-8 text-black sm:h-10 sm:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="mb-2 text-lg font-bold uppercase tracking-wide text-white sm:mb-3 sm:text-xl">Businessmen</h3>
+                <p className="mb-3 text-xs leading-relaxed text-zinc-400 sm:mb-4 sm:text-sm">
+                  Entrepreneurs, CEOs, sales teams, consultants. Make every handshake count. Instant contact exchange that impresses.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.15)", color: "#FFC332", border: "1px solid rgba(255,195,50,.3)" }}>Entrepreneurs</span>
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.15)", color: "#FFC332", border: "1px solid rgba(255,195,50,.3)" }}>CEOs</span>
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.15)", color: "#FFC332", border: "1px solid rgba(255,195,50,.3)" }}>Consultants</span>
+                </div>
+               </div>
+
+              {/* Everyday People */}
+              <div className="group rounded-2xl border border-zinc-700 bg-zinc-800/60 p-6 text-center transition-all hover:-translate-y-3 hover:border-[#ffcc00]/40 hover:shadow-2xl sm:rounded-3xl sm:p-8">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#FFC332,#e6a800)] shadow-lg transition-transform group-hover:scale-110 sm:mb-6 sm:h-20 sm:w-20 sm:rounded-2xl">
+                  {/* Heroicons equivalent for 'people' */}
+                  <svg className="h-8 w-8 text-black sm:h-10 sm:w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="mb-2 text-lg font-bold uppercase tracking-wide text-white sm:mb-3 sm:text-xl">Everyone</h3>
+                <p className="mb-3 text-xs leading-relaxed text-zinc-400 sm:mb-4 sm:text-sm">
+                  Students, freelancers, everyday professionals. One card for all your contacts, socials, and personal brand. Simple &amp; affordable.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.1)", color: "#FFC332", border: "1px solid rgba(255,195,50,.2)" }}>Students</span>
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.1)", color: "#FFC332", border: "1px solid rgba(255,195,50,.2)" }}>Freelancers</span>
+                  <span className="rounded-full px-2 py-1 text-xs font-medium sm:px-3" style={{ background: "rgba(255,195,50,.1)", color: "#FFC332", border: "1px solid rgba(255,195,50,.2)" }}>Professionals</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="faqs" className="bg-zinc-950 py-20">
           <div className="mx-auto w-full max-w-3xl px-4 sm:px-6">
             <div className="text-center">
@@ -454,12 +564,12 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setShowFloatingVideo(false)}
-            className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white/50 bg-black/55 text-sm text-white"
+            className="absolute right-2 top-2 z-[60] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-white/50 bg-black/70 text-sm font-bold text-white transition hover:bg-black"
             aria-label="Close video"
           >
-            x
+            ✕
           </button>
-          <video src="/assets/video/home1.mp4" autoPlay loop playsInline className="block w-full object-cover" style={{ aspectRatio: "9 / 16" }} />
+          <video src="/assets/video/home1.mp4" autoPlay muted loop playsInline className="pointer-events-none block w-full object-cover" style={{ aspectRatio: "9 / 16" }} />
         </div>
       )}
     </div>

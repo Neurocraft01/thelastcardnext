@@ -16,7 +16,7 @@ export function SiteFooter() {
           <div className="mt-3 space-y-2 text-sm">
             <Link href="/about" className="block hover:text-[#ffcc00]">About</Link>
             <Link href="/features" className="block hover:text-[#ffcc00]">Features</Link>
-            <Link href="/pricing" className="block hover:text-[#ffcc00]">Pricing</Link>
+            <Link href="/#pricing" className="block hover:text-[#ffcc00]">Pricing</Link>
             <Link href="/contact" className="block hover:text-[#ffcc00]">Contact</Link>
           </div>
         </div>
