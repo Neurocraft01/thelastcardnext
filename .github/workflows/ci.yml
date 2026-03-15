@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["*"]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: thelastcard-nextjs/package-lock.json
+
+      - name: Install dependencies
+        working-directory: thelastcard-nextjs
+        run: npm ci
+
+      - name: Dependency vulnerability scan
+        working-directory: thelastcard-nextjs
+        run: npm audit --audit-level=high
+
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+
+      - name: Migration preflight
+        working-directory: thelastcard-nextjs
+        run: npm run preflight:migrations
+
+      - name: Typecheck
+        working-directory: thelastcard-nextjs
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: thelastcard-nextjs
+        run: npm run lint
+
+      - name: Unit tests
+        working-directory: thelastcard-nextjs
+        run: npm run test
+
+      - name: Build
+        working-directory: thelastcard-nextjs
+        run: npm run build
